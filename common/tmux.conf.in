@@ -30,14 +30,24 @@ set -g pane-border-style        "fg=#3c3836"
 set -g pane-active-border-style "fg=@@ACCENT@@"
 set -g message-style            "bg=#504945 fg=#ebdbb2"
 
+# ── Top strip: accent [session] pill + cwd, drawn on each pane's top border ───
+# This rides the pane's TOP border line (no added height): with one pane it
+# reads like a top bar; with splits, every pane is labeled. The border *line*
+# color comes from pane-(active-)border-style above — so the active pane's strip
+# glows in the session accent while inactive panes stay charcoal — and the text
+# colors below sit on top of that. Path keeps its last 40 chars (the tail is the
+# part you care about).
+set -g pane-border-status top
+set -g pane-border-format " #[fg=@@ACCENT@@,bold][#S]#[fg=#a89984,nobold] #{=-40:pane_current_path} "
+
 # ── Left: [session] on accent → right-wedge opens the panel-grey gutter ──────
-set -g status-left "#[bg=@@ACCENT@@,fg=#1d2021,bold] [#S] #[fg=@@ACCENT@@,bg=#504945]#[default]"
+set -g status-left "#[bg=@@ACCENT@@,fg=#1d2021,bold] [#S] #[fg=@@ACCENT@@,bg=#504945]#[default]"
 
 # ── Window list: current pill on panel-grey, inactive plain on charcoal ──────
 setw -g window-status-separator      ""
 setw -g window-status-style          "fg=#a89984"
 setw -g window-status-format         " #I:#W#F "
-setw -g window-status-current-format "#[bg=#504945,fg=@@ACCENT@@,bold] #I:#W#F #[fg=#504945,bg=#282828]#[default]"
+setw -g window-status-current-format "#[bg=#504945,fg=@@ACCENT@@,bold] #I:#W#F #[fg=#504945,bg=#282828]#[default]"
 
 # ── Right: load (#3c3836) → widget (#504945) → accent clock ──────────────────
 # Assembled by build.sh to match the selected --widget. The helper scripts emit
