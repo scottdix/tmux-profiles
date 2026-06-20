@@ -27,15 +27,23 @@ list_palette() {
     ( unset GLOB ACCENT LABEL ORDER; . "$f"
       printf '  %-8s %s\n' "${LABEL:-${GLOB:-?}}" "${ACCENT:-?}" )
   done
+  :
 }
 
 # Resolve a palette name to its hex by sourcing the matching tracked scheme.
+# Accumulate the match and emit it once; returns success regardless of whether a
+# match was found (callers test the emptiness of the captured output). This must
+# not end on a non-zero status: under `set -e` a failing command-substitution
+# here would abort the assignment `hex="$(palette_hex ...)"`.
 palette_hex() {  # $1 = palette name
+  local f v hex=""
   for f in "$SCHEMES_DIR"/*.scheme; do
     [ -e "$f" ] || continue; is_local "$f" && continue
-    ( unset GLOB ACCENT LABEL ORDER; . "$f"
-      [ "${LABEL:-}" = "$1" ] && printf '%s' "${ACCENT:-}" )
+    v="$( unset GLOB ACCENT LABEL ORDER; . "$f"
+      [ "${LABEL:-}" = "$1" ] && printf '%s' "${ACCENT:-}" )"
+    [ -n "$v" ] && hex="$v"
   done
+  printf '%s' "$hex"
 }
 
 list_maps() {
@@ -47,6 +55,7 @@ list_maps() {
         "${LABEL:-?}" "${ACCENT:-?}" "${ORDER:-?}" "$(basename "$f")" )
   done
   [ "$found" = 1 ] || echo "  (no local maps yet)"
+  :
 }
 
 # Lowercase + keep [a-z0-9_-] for a safe, stable filename slug.
