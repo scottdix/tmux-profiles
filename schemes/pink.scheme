@@ -1,0 +1,5 @@
+# pink (hot pink)
+GLOB="*pink*"
+ACCENT="#ff69b4"
+LABEL="pink"
+ORDER=50
