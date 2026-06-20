@@ -1,0 +1,5 @@
+# amber
+GLOB="*amber*"
+ACCENT="#fabd2f"
+LABEL="amber"
+ORDER=40

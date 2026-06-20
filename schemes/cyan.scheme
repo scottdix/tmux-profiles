@@ -1,0 +1,5 @@
+# cyan
+GLOB="*cyan*"
+ACCENT="#00cdcd"
+LABEL="cyan"
+ORDER=10

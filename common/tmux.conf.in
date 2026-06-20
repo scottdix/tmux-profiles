@@ -1,0 +1,100 @@
+# =============================================================================
+# tmux-profiles — status bar template  (rendered into ~/.tmux.conf by build.sh)
+#
+# Powerline status bar · gruvbox charcoal core · per-session accent.
+# The accent is chosen from the session name (#S) by substring glob; the nested
+# conditional is GENERATED from schemes/*.scheme and substituted in at every
+# @@ACCENT@@ marker (%hidden vars aren't re-evaluated inside format strings, so
+# the expression is inlined rather than referenced). Unknown sessions fall
+# through to neutral grey.
+#
+# Requirements:
+#   * tmux 3.3+            (uses #{?...} / #{m:...})
+#   * a Nerd Font          JetBrainsMono Nerd Font Mono — see ../fonts/
+#   * helper scripts in ~/.tmux/bin/  (load.sh + the chosen widget; installed by install.sh)
+# =============================================================================
+
+# truecolor so the hex accents render exactly
+set -g  default-terminal "tmux-256color"
+set -ga terminal-overrides ",*256col*:Tc,xterm-*:Tc"
+
+# ── Core chrome (charcoal — identical in every scheme) ───────────────────────
+set -g status               on
+set -g status-position      bottom
+set -g status-interval      5
+set -g status-justify       left
+set -g status-left-length   40
+set -g status-right-length  120
+set -g status-style             "bg=#282828 fg=#ebdbb2"
+set -g pane-border-style        "fg=#3c3836"
+set -g pane-active-border-style "fg=@@ACCENT@@"
+set -g message-style            "bg=#504945 fg=#ebdbb2"
+
+# ── Left: [session] on accent → right-wedge opens the panel-grey gutter ──────
+set -g status-left "#[bg=@@ACCENT@@,fg=#1d2021,bold] [#S] #[fg=@@ACCENT@@,bg=#504945]#[default]"
+
+# ── Window list: current pill on panel-grey, inactive plain on charcoal ──────
+setw -g window-status-separator      ""
+setw -g window-status-style          "fg=#a89984"
+setw -g window-status-format         " #I:#W#F "
+setw -g window-status-current-format "#[bg=#504945,fg=@@ACCENT@@,bold] #I:#W#F #[fg=#504945,bg=#282828]#[default]"
+
+# ── Right: load (#3c3836) → widget (#504945) → accent clock ──────────────────
+# Assembled by build.sh to match the selected --widget. The helper scripts emit
+# segment *content* only; the powerline separators and segment colors live here.
+set -g status-right "@@STATUS_RIGHT@@"
+
+# ── Alerts stay red in every scheme, by design ───────────────────────────────
+setw -g window-status-bell-style     "bg=#fb4934 fg=#1d2021 bold"
+setw -g window-status-activity-style "fg=#fb4934"
+
+# ── General UX ───────────────────────────────────────────────────────────────
+set -g base-index        1
+setw -g pane-base-index  1
+set -g renumber-windows  on
+set -g mouse             on
+set -s escape-time       10
+set -g history-limit     50000
+set -g set-titles        on
+set -g set-titles-string "#S · #W"
+set -g mode-keys         vi
+
+# ── Mouse / trackpad scrolling (keeps the status bar anchored) ───────────────
+# In iTerm2, also tick the profile's "Report mouse wheel events". Don't nest
+# tmux over SSH — connect straight into the remote server.
+# Wheel up: forward to a mouse-aware full-screen app (vim/less); else stay in
+# copy-mode if already there; else enter copy-mode (-e auto-exits at the bottom).
+bind -n WheelUpPane \
+  if-shell -F -t = "#{mouse_any_flag}" \
+    "send-keys -M" \
+    "if-shell -F -t = '#{pane_in_mode}' 'send-keys -M' 'copy-mode -e'"
+# Lines per wheel notch (set by build.sh --scroll-lines; lower = calmer,
+# nicer on low-latency links where the default 3-5 feels too fast).
+bind -T copy-mode-vi WheelUpPane   send-keys -X -N @@SCROLL_LINES@@ scroll-up
+bind -T copy-mode-vi WheelDownPane send-keys -X -N @@SCROLL_LINES@@ scroll-down
+
+# ── Selection: select and STAY — no auto-copy, no snap to the bottom ─────────
+# tmux's default (copy-selection-and-cancel) copies to the clipboard and exits
+# copy-mode the instant you release the mouse, which snaps you to the live
+# bottom. Instead, keep the highlight and your scroll position; copy only when
+# you ask for it explicitly (y or Enter in copy-mode).
+unbind -T copy-mode-vi MouseDragEnd1Pane
+bind   -T copy-mode-vi MouseDragEnd1Pane send-keys -X stop-selection
+# Word- / line-select while already in copy-mode stays put as well.
+bind -T copy-mode-vi DoubleClick1Pane send-keys -X select-word \; send-keys -X stop-selection
+bind -T copy-mode-vi TripleClick1Pane send-keys -X select-line \; send-keys -X stop-selection
+
+# ── Copy keys ────────────────────────────────────────────────────────────────
+# Keep tmux out of the system clipboard entirely (no OSC 52 in or out), so no
+# process on a remote host can read or write your local clipboard. Pinned
+# explicitly so a reload always lands here regardless of prior server state.
+set -g set-clipboard off
+#
+# For the SYSTEM clipboard, copy natively rather than via OSC 52: hold ⌥ Option
+# while drag-selecting (iTerm2 bypasses tmux's mouse capture), then Cmd-C. This
+# needs no "apps may access clipboard" permission, so it never exposes your
+# local clipboard to processes on the remote host — the safer default over SSH.
+#
+# y copies the selection into tmux's own buffer and keeps it (no snap to the
+# bottom); paste it back inside tmux with prefix + ]. Enter copies and exits.
+bind -T copy-mode-vi y send-keys -X copy-selection-no-clear

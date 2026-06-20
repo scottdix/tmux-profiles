@@ -1,0 +1,5 @@
+# blue
+GLOB="*blue*"
+ACCENT="#7aa2f7"
+LABEL="blue"
+ORDER=30

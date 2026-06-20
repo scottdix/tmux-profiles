@@ -1,0 +1,5 @@
+# green
+GLOB="*green*"
+ACCENT="#3fb950"
+LABEL="green"
+ORDER=20

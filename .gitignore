@@ -1,0 +1,10 @@
+# generated output — rebuild with ./build.sh
+build/
+
+# local config backups dropped by install.sh
+*.bak-*
+
+# private, environment-specific name→color maps — never published
+schemes/*.local.scheme
+
+.DS_Store
