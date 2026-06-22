@@ -72,6 +72,14 @@ set -g mode-keys         vi
 # ── Mouse / trackpad scrolling (keeps the status bar anchored) ───────────────
 # In iTerm2, also tick the profile's "Report mouse wheel events". Don't nest
 # tmux over SSH — connect straight into the remote server.
+#
+# Client-side side effect over SSH: `mouse on` makes the *remote* tmux enable
+# mouse reporting in your *local* iTerm2 (a DECSET escape). A clean exit sends
+# the matching DECRST to turn it off; an abrupt drop (laptop lid → broken pipe)
+# never does, so the local terminal keeps emitting wheel escapes (e.g.
+# "64;25;31M") into your shell on every scroll. You can't fix it from the dead
+# remote — heal it on the client at each prompt. See "iTerm2 over SSH" in
+# README.md for the zsh precmd remedy.
 # Wheel up: forward to a mouse-aware full-screen app (vim/less); else stay in
 # copy-mode if already there; else enter copy-mode (-e auto-exits at the bottom).
 bind -n WheelUpPane \
