@@ -113,6 +113,41 @@ everywhere by design.
   **⌥ Option** while drag-selecting, then **Cmd-C**. `y` copies into tmux's own
   buffer (paste with `prefix` + `]`).
 
+## iTerm2 over SSH: heal leaked mouse reporting
+
+`set -g mouse on` is what makes wheel scrolling and drag-select work — but it has
+a client-side side effect worth knowing. When you SSH into a host running this
+config, the **remote** tmux enables mouse reporting in your **local** iTerm2 by
+sending a DECSET escape. On a clean exit tmux sends the matching DECRST to switch
+it back off. An **abrupt** disconnect — closing the laptop lid, dropped Wi-Fi,
+any broken pipe — kills tmux before it can send that cleanup, leaving your local
+terminal stuck in mouse-reporting mode.
+
+The symptom: back at a plain local shell (no tmux), every scroll dumps a flood of
+escape payloads like `64;25;31M` / `0;32;13m` instead of scrolling. Those are SGR
+wheel-events (`64` = wheel-up, then `column;row`) that iTerm2 is still reporting
+and your local shell can't interpret. A brand-new iTerm2 window is fine because it
+was never switched into that mode.
+
+You can't fix this from the remote (the pipe is already dead), so heal it on the
+**client**: reset all mouse-tracking modes every time you return to a local
+prompt. For zsh, add this to `~/.zshrc` on your laptop:
+
+```sh
+# Heal leaked mouse-reporting after a dropped SSH/tmux session.
+_reset_mouse_reporting() {
+  printf '\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?1015l\033[?1016l'
+}
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _reset_mouse_reporting
+```
+
+It's a no-op when mouse mode is already off, and it can't disturb a live session
+because `precmd` doesn't fire while `ssh` holds the foreground — only once you're
+back at the local prompt. To clear a window that's *already* stuck, run `reset`
+once. Quick escape hatch any time: hold **⌥ Option** while scrolling to force a
+local scroll regardless of reporting state.
+
 ## Requirements
 
 - **tmux 3.3+** (`#{?...}` / `#{m:...}` formats)
